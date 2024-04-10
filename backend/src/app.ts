@@ -16,7 +16,8 @@ const app = express();
 
 app.use(cors({origin:`http://${process.env.CORS_ORIGIN_URL}`,credentials:true}))
 
-const connectionString = process.env.CONNECTION_STRING || "";
+// const connectionString = process.env.CONNECTION_STRING || "";
+const connectionString = "mongodb+srv://johndeo8789:L9IBihfhwJjYLtEy@quiz-cluster.hbwk1we.mongodb.net/?retryWrites=true&w=majority&appName=Quiz-Cluster" || "";
 
 const port = process.env.PORT;
 
