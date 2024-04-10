@@ -1,6 +1,7 @@
 import express, { NextFunction, Request, Response } from "express";
 import mongoose from "mongoose";
 import cors from "cors"
+import * as redis from "redis"
 
 import authRoute from "./routes/auth";
 import examRoute from "./routes/exam";
@@ -20,6 +21,15 @@ app.use(cors({origin:`http://${process.env.CORS_ORIGIN_URL}`,credentials:true}))
 const connectionString = "mongodb+srv://johndeo8789:L9IBihfhwJjYLtEy@quiz-cluster.hbwk1we.mongodb.net/?retryWrites=true&w=majority&appName=Quiz-Cluster" || "";
 
 const port = process.env.PORT;
+
+const REDIS_PORT: number = 6379;
+
+const client = redis.createClient(); //added by default port 6379
+
+(async () => {
+  await client.connect();
+  console.log('Connected to Redis!');   
+})();
 
 app.use(express.json());
 declare global {
