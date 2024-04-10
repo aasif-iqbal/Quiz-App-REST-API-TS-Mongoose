@@ -1,8 +1,5 @@
 import mongoose from "mongoose";
 
-
-
-
 const schema = mongoose.Schema;
 
 const OTPSchema = new schema({
@@ -21,7 +18,6 @@ const OTPSchema = new schema({
 
     }
 });
-
 
 const OTP = mongoose.model("OTP", OTPSchema);
 
