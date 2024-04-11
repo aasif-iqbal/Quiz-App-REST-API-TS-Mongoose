@@ -88,6 +88,7 @@ router.get("/allpublishedquiz/exam",isAuthenticated, getAllQuizExam);
 router.get("/allpublishedquiz/test",isAuthenticated, getAllQuizTest);
 
 // get
+// GET /quiz?level=easy                          
 // GET /quiz/:quizId
 router.get("/:quizId?", isAuthenticated, getQuiz);
 

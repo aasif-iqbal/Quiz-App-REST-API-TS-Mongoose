@@ -44,7 +44,8 @@ const createQuiz: RequestHandler = async (req, res, next) => {
 const getQuiz: RequestHandler = async (req, res, next) => {
   try {
     const quizId = req.params.quizId;
-    //set-up redis for this route
+    //set-up redis for this route        
+
     const client = redis.createClient(); 
     await client.connect();
 
@@ -60,12 +61,13 @@ const getQuiz: RequestHandler = async (req, res, next) => {
         isPublicQuiz: 1,
         allowedUser: 1
       });
-
+    
       if (!quiz) {
         const err = new ProjectError("No quiz found!");
         err.statusCode = 404;
         throw err;
       }
+
       if(!quiz.isPublicQuiz && !quiz.allowedUser.includes(req.userId)){
         const err = new ProjectError("You are not authorized!");
         err.statusCode = 403;
@@ -76,8 +78,34 @@ const getQuiz: RequestHandler = async (req, res, next) => {
         err.statusCode = 403;
         throw err;
       }
-    } else {
+
       
+
+    }
+    else if(req.query.level){
+      // localhost:3002/quiz?level=easy                          
+
+      //clean up old cache data
+      const difficultyLevel = req.query.level; //easy
+      await client.del(JSON.stringify(req.userId));
+        
+      const allowedType = ['easy', 'medium', 'hard'];
+
+      let isvalid = allowedType.includes(difficultyLevel.toString());
+      if(isvalid){
+        let sort = {                       
+              createdBy: req.userId,  
+              difficultyLevel: difficultyLevel,            
+        };                   
+        quiz = await Quiz.find(sort);              
+      }else{
+        const err = new ProjectError("Bad Request");
+        err.statusCode = 400;
+        throw err;
+      }  
+    }    
+    else {
+      // Fetching redis-cache value
       let quizFromRedisCache = await client.get(JSON.stringify(req.userId));
           
       if(!quizFromRedisCache){
