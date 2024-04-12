@@ -78,27 +78,22 @@ const getQuiz: RequestHandler = async (req, res, next) => {
         err.statusCode = 403;
         throw err;
       }
-
-      
-
     }
-    else if(req.query.level){
-      // localhost:3002/quiz?level=easy                          
-
-      //clean up old cache data
-      const difficultyLevel = req.query.level; //easy
+    else if(req.query.level){      
+      // clean up old cache data
+      const difficultyLevel = req.query.level;
       await client.del(JSON.stringify(req.userId));
         
       const allowedType = ['easy', 'medium', 'hard'];
 
-      let isvalid = allowedType.includes(difficultyLevel.toString());
-      if(isvalid){
+      let isValid = allowedType.includes(difficultyLevel.toString());
+      if(isValid){
         let sort = {                       
               createdBy: req.userId,  
               difficultyLevel: difficultyLevel,            
         };                   
         quiz = await Quiz.find(sort);              
-      }else{
+      } else {
         const err = new ProjectError("Bad Request");
         err.statusCode = 400;
         throw err;
