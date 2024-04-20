@@ -115,29 +115,34 @@ const getQuizWithRedis: RequestHandler = async (req, res, next) => {
   
   try {    
     // get quiz data from redis cache
-    const redisCache = await redisClient.get(JSON.stringify(userId));
-    
+    const redisCache = await redisClient.get(JSON.stringify(userId));    
+        
     //check if quiz data present in redis cache
-    if(redisCache){
+    if(redisCache !== null){      
        quiz = JSON.parse(redisCache);
        console.log('Serve from redis');
-    }else{
-      // if quiz data is not present in cache, fetch from mongodb
-       quiz = await Quiz.find({},
-        {
-          name: 1,
-          category: 1,
-          difficultyLevel: 1,
-          questionList: 1,
-          createdBy: 1,
-          passingPercentage: 1,
-          isPublicQuiz: 1,
-          allowedUser: 1,
-        });
+    } else {
+      // if quiz data is not present in cache, fetch from mongodb     
+      quiz = await Quiz.find({ createdBy: userId },{
+            name: 1,
+            category: 1,
+            difficultyLevel: 1,
+            questionList: 1,
+            createdBy: 1,
+            passingPercentage: 1,
+            isPublicQuiz: 1,
+            allowedUser: 1,
+          });
 
         // set quiz data into redis cache
         await redisClient.set(JSON.stringify(userId), JSON.stringify(quiz));
         console.log('Serve from database');        
+    }
+
+    if (!quiz) {
+      const err = new ProjectError("No quiz found!");
+      err.statusCode = 404;
+      throw err;
     }
 
     const resp: ReturnResponse = {
@@ -153,7 +158,65 @@ const getQuizWithRedis: RequestHandler = async (req, res, next) => {
 
 const getQuizSortByLevel: RequestHandler = async (req, res, next) => {
   
-  
+  const quizId = req.params.quizId;
+  try {
+    let quiz = await Quiz.find({}, {
+      name: 1,
+      category: 1,
+      difficultyLevel: 1,
+      questionList: 1,
+      createdBy: 1,
+      passingPercentage: 1,
+      isPublicQuiz:1,
+      allowedUser:1
+    });
+    
+    if(req.query.level){      
+      console.log(req.query.level);
+      console.log(typeof(req.query.level));
+      let quiz = await Quiz.find({difficultyLevel:req.query.level},{
+        name: 1,
+        category: 1,
+        difficultyLevel:1,
+        questionList: 1,
+        createdBy: 1,
+        passingPercentage: 1,
+        isPublicQuiz: 1,
+        allowedUser: 1,
+      });
+      console.log(quiz);
+      
+      const resp: ReturnResponse = {
+        status: "success",
+        message: "Quiz",
+        data: quiz,
+      };
+      return res.status(200).send(resp);
+    }
+    // else{
+    //    res.send(400).send({
+    //     status:"failure",
+    //     message:"Bad Request",
+    //     data:null
+    //   })
+    // }
+
+    if (!quiz) {
+      const err = new ProjectError("No quiz found!");
+      err.statusCode = 404;
+      throw err;
+    }
+    
+    const resp: ReturnResponse = {
+      status: "success",
+      message: "Quiz Sorted by Difficulty Level",
+      data: quiz,
+    };
+    res.status(200).send(resp);
+
+  } catch (error) {
+    next(error);
+  }
 };
 
 const updateQuiz: RequestHandler = async (req, res, next) => {

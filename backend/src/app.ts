@@ -19,7 +19,6 @@ app.use(cors({origin:`http://${process.env.CORS_ORIGIN_URL}`,credentials:true}))
 
 const connectionString = process.env.CONNECTION_STRING || "";
 
-
 const port = process.env.PORT;
 
 const REDIS_PORT: number = 6379;
