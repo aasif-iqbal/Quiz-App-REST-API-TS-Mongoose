@@ -17,19 +17,13 @@ const app = express();
 
 app.use(cors({origin:`http://${process.env.CORS_ORIGIN_URL}`,credentials:true}))
 
-// const connectionString = process.env.CONNECTION_STRING || "";
-const connectionString = "mongodb+srv://johndeo8789:L9IBihfhwJjYLtEy@quiz-cluster.hbwk1we.mongodb.net/?retryWrites=true&w=majority&appName=Quiz-Cluster" || "";
+const connectionString = process.env.CONNECTION_STRING || "";
+
 
 const port = process.env.PORT;
 
 const REDIS_PORT: number = 6379;
-
-const client = redis.createClient(); //added by default port 6379
-
-(async () => {
-  await client.connect();
-  console.log('Connected to Redis!');   
-})();
+let redisClient;
 
 app.use(express.json());
 declare global {
@@ -98,4 +92,17 @@ clearBlacklistedTokenScheduler;
   } catch (error) {
     console.log(error);
   }
+})();
+
+// Redis connection
+(async () => {
+  try {
+    redisClient = redis.createClient();
+
+    redisClient.on("error", (error) => console.error(`Redis Error : ${error}`));
+
+    console.log("Connected to Redis server.");
+} catch (error) {
+    console.error("Error occurred while trying to connect to Redis:", error);
+}
 })();

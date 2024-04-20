@@ -5,13 +5,15 @@ import {
   createQuiz,
   deleteQuiz,
   getQuiz,
+  getQuizWithRedis,
   isValidQuiz,
   isValidQuizName,
   publishQuiz,
   updateQuiz,
   getAllQuiz,
   getAllQuizExam,
-  getAllQuizTest
+  getAllQuizTest,
+  getQuizSortByLevel
 } from "../controllers/quiz";
 import { validateRequest } from "../helper/validateRequest";
 import { isAuthenticated } from "../middlewares/isAuth";
@@ -75,7 +77,7 @@ router.post(
     }),
   ],
   validateRequest,
-  createQuiz
+  createQuiz,  
 );
 
 //Get  quiz/allpublished quiz
@@ -87,12 +89,15 @@ router.get("/allpublishedquiz/exam",isAuthenticated, getAllQuizExam);
 //Get  quiz/allpublished quiz/test
 router.get("/allpublishedquiz/test",isAuthenticated, getAllQuizTest);
 
+// GET quiz/redis
+router.get("/redis", isAuthenticated, getQuizWithRedis);
+
+// GET quiz/allquiz/redis/difficulty?level=hard
+router.get("/allquiz/difficulty", isAuthenticated, getQuizSortByLevel);
+
 // get
-// GET /quiz?level=easy                          
 // GET /quiz/:quizId
 router.get("/:quizId?", isAuthenticated, getQuiz);
-
-//
 
 //update
 //PUT /quiz

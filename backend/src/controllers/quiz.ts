@@ -8,11 +8,22 @@ import { ReturnResponse } from "../utils/interfaces";
 import * as redis from "redis"
 import User from "../models/user";
 
+const _createRedisClient = async () => {
+  
+  const client = await redis.createClient();
+  
+  client.on('error', (err) => {
+      console.error('Redis connection error:', err);
+  });
+  
+  return client;
+}
+
 const createQuiz: RequestHandler = async (req, res, next) => {
   try {
-    //set-up redis for this route
-    const client = redis.createClient(); 
-    await client.connect();
+    
+    const redisClient = await _createRedisClient();      
+    await redisClient.connect();
 
     const createdBy = req.userId;
     const name = req.body.name;
@@ -27,7 +38,7 @@ const createQuiz: RequestHandler = async (req, res, next) => {
     const quiz = new Quiz({ name, category, difficultyLevel, questionList, answers, passingPercentage, createdBy, attemptsAllowedPerUser, isPublicQuiz, allowedUser });
     
     //clean up old cache data
-    await client.del(JSON.stringify(createdBy));
+    await redisClient.del(JSON.stringify(createdBy));
       
     const result = await quiz.save();
     const resp: ReturnResponse = {
@@ -44,11 +55,6 @@ const createQuiz: RequestHandler = async (req, res, next) => {
 const getQuiz: RequestHandler = async (req, res, next) => {
   try {
     const quizId = req.params.quizId;
-    //set-up redis for this route        
-
-    const client = redis.createClient(); 
-    await client.connect();
-
     let quiz;
     if (quizId) {
       quiz = await Quiz.findById(quizId, {
@@ -61,13 +67,12 @@ const getQuiz: RequestHandler = async (req, res, next) => {
         isPublicQuiz: 1,
         allowedUser: 1
       });
-    
+
       if (!quiz) {
         const err = new ProjectError("No quiz found!");
         err.statusCode = 404;
         throw err;
       }
-
       if(!quiz.isPublicQuiz && !quiz.allowedUser.includes(req.userId)){
         const err = new ProjectError("You are not authorized!");
         err.statusCode = 403;
@@ -78,40 +83,8 @@ const getQuiz: RequestHandler = async (req, res, next) => {
         err.statusCode = 403;
         throw err;
       }
-    }
-    else if(req.query.level){      
-      // clean up old cache data
-      const difficultyLevel = req.query.level;
-      await client.del(JSON.stringify(req.userId));
-        
-      const allowedType = ['easy', 'medium', 'hard'];
-
-      let isValid = allowedType.includes(difficultyLevel.toString());
-      if(isValid){
-        let sort = {                       
-              createdBy: req.userId,  
-              difficultyLevel: difficultyLevel,            
-        };                   
-        quiz = await Quiz.find(sort);              
-      } else {
-        const err = new ProjectError("Bad Request");
-        err.statusCode = 400;
-        throw err;
-      }  
-    }    
-    else {
-      // Fetching redis-cache value
-      let quizFromRedisCache = await client.get(JSON.stringify(req.userId));
-          
-      if(!quizFromRedisCache){
-        console.log('SERVING FROM DATABASE');        
-        quiz = await Quiz.find({ createdBy: req.userId });
-        await client.set(JSON.stringify(req.userId), JSON.stringify(quiz));
-      }else{
-       // console.log('RedisCache', quizFromRedisCache);
-        console.log('SERVING FROM REDIS');
-        quiz = JSON.parse(quizFromRedisCache);
-      }      
+    } else {
+      quiz = await Quiz.find({ createdBy: req.userId });
     }
 
     if (!quiz) {
@@ -129,6 +102,58 @@ const getQuiz: RequestHandler = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
+};
+
+const getQuizWithRedis: RequestHandler = async (req, res, next) => {
+  
+  const userId = req.userId;
+  let quiz;
+
+  //Setup redis client
+  const redisClient = await _createRedisClient();      
+  await redisClient.connect();
+  
+  try {    
+    // get quiz data from redis cache
+    const redisCache = await redisClient.get(JSON.stringify(userId));
+    
+    //check if quiz data present in redis cache
+    if(redisCache){
+       quiz = JSON.parse(redisCache);
+       console.log('Serve from redis');
+    }else{
+      // if quiz data is not present in cache, fetch from mongodb
+       quiz = await Quiz.find({},
+        {
+          name: 1,
+          category: 1,
+          difficultyLevel: 1,
+          questionList: 1,
+          createdBy: 1,
+          passingPercentage: 1,
+          isPublicQuiz: 1,
+          allowedUser: 1,
+        });
+
+        // set quiz data into redis cache
+        await redisClient.set(JSON.stringify(userId), JSON.stringify(quiz));
+        console.log('Serve from database');        
+    }
+
+    const resp: ReturnResponse = {
+      status: "success",
+      message: "Quiz",
+      data: quiz,
+    };
+    res.status(200).send(resp);
+  }catch(error){
+    next(error);
+  }  
+}
+
+const getQuizSortByLevel: RequestHandler = async (req, res, next) => {
+  
+  
 };
 
 const updateQuiz: RequestHandler = async (req, res, next) => {
@@ -308,6 +333,8 @@ const isValidQuizName = async (name: String) => {
   return false;
 };
 
+
+
 const getAllQuiz: RequestHandler = async (req, res, next) => {
   try {
     let quiz = await Quiz.find({ isPublished: true }, {
@@ -422,11 +449,13 @@ export {
   createQuiz,
   deleteQuiz,
   getQuiz,
+  getQuizWithRedis,
   isValidQuiz,
   isValidQuizName,
   publishQuiz,
   updateQuiz,
   getAllQuiz,
   getAllQuizExam,
-  getAllQuizTest
+  getAllQuizTest,
+  getQuizSortByLevel,  
 };
