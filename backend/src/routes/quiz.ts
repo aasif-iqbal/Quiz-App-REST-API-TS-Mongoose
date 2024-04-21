@@ -12,8 +12,7 @@ import {
   updateQuiz,
   getAllQuiz,
   getAllQuizExam,
-  getAllQuizTest,
-  getQuizSortByLevel
+  getAllQuizTest
 } from "../controllers/quiz";
 import { validateRequest } from "../helper/validateRequest";
 import { isAuthenticated } from "../middlewares/isAuth";
@@ -91,10 +90,6 @@ router.get("/allpublishedquiz/test",isAuthenticated, getAllQuizTest);
 
 // GET quiz/redis
 router.get("/redis", isAuthenticated, getQuizWithRedis);
-
-// GET quiz/allquiz/redis/difficulty?level=hard
-router.get("/allquiz/difficulty", isAuthenticated, getQuizSortByLevel);
-
 // get
 // GET /quiz/:quizId
 router.get("/:quizId?", isAuthenticated, getQuiz);

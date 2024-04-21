@@ -116,11 +116,10 @@ const getQuizWithRedis: RequestHandler = async (req, res, next) => {
   try {    
     // get quiz data from redis cache
     const redisCache = await redisClient.get(JSON.stringify(userId));    
-        
+
     //check if quiz data present in redis cache
     if(redisCache !== null){      
-       quiz = JSON.parse(redisCache);
-       console.log('Serve from redis');
+       quiz = JSON.parse(redisCache);                   
     } else {
       // if quiz data is not present in cache, fetch from mongodb     
       quiz = await Quiz.find({ createdBy: userId },{
@@ -132,11 +131,9 @@ const getQuizWithRedis: RequestHandler = async (req, res, next) => {
             passingPercentage: 1,
             isPublicQuiz: 1,
             allowedUser: 1,
-          });
-
+          });                    
         // set quiz data into redis cache
-        await redisClient.set(JSON.stringify(userId), JSON.stringify(quiz));
-        console.log('Serve from database');        
+        await redisClient.set(JSON.stringify(userId), JSON.stringify(quiz));        
     }
 
     if (!quiz) {
@@ -156,77 +153,14 @@ const getQuizWithRedis: RequestHandler = async (req, res, next) => {
   }  
 }
 
-const getQuizSortByLevel: RequestHandler = async (req, res, next) => {
-  
-  const quizId = req.params.quizId;
-  try {
-    let quiz = await Quiz.find({}, {
-      name: 1,
-      category: 1,
-      difficultyLevel: 1,
-      questionList: 1,
-      createdBy: 1,
-      passingPercentage: 1,
-      isPublicQuiz:1,
-      allowedUser:1
-    });
-    
-    if(req.query.level){      
-      console.log(req.query.level);
-      console.log(typeof(req.query.level));
-      let quiz = await Quiz.find({difficultyLevel:req.query.level},{
-        name: 1,
-        category: 1,
-        difficultyLevel:1,
-        questionList: 1,
-        createdBy: 1,
-        passingPercentage: 1,
-        isPublicQuiz: 1,
-        allowedUser: 1,
-      });
-      console.log(quiz);
-      
-      const resp: ReturnResponse = {
-        status: "success",
-        message: "Quiz",
-        data: quiz,
-      };
-      return res.status(200).send(resp);
-    }
-    // else{
-    //    res.send(400).send({
-    //     status:"failure",
-    //     message:"Bad Request",
-    //     data:null
-    //   })
-    // }
-
-    if (!quiz) {
-      const err = new ProjectError("No quiz found!");
-      err.statusCode = 404;
-      throw err;
-    }
-    
-    const resp: ReturnResponse = {
-      status: "success",
-      message: "Quiz Sorted by Difficulty Level",
-      data: quiz,
-    };
-    res.status(200).send(resp);
-
-  } catch (error) {
-    next(error);
-  }
-};
-
 const updateQuiz: RequestHandler = async (req, res, next) => {
   try {
     const quizId = req.body._id;
     const quiz = await Quiz.findById(quizId);
 
-    //set-up redis for this route
-    const client = redis.createClient(); 
-    await client.connect();
+    //Setup redis client
+    const redisClient = await _createRedisClient();      
+    await redisClient.connect();
 
     if (!quiz) {
       const err = new ProjectError("Quiz not found!");
@@ -261,7 +195,7 @@ const updateQuiz: RequestHandler = async (req, res, next) => {
     quiz.allowedUser = req.body.allowedUser;
 
     //clean up old cache data
-    await client.del(JSON.stringify(req.userId));
+    await redisClient.del(JSON.stringify(req.userId));
 
     await quiz.save();
 
@@ -281,9 +215,9 @@ const deleteQuiz: RequestHandler = async (req, res, next) => {
     const quizId = req.params.quizId;
     const quiz = await Quiz.findById(quizId);
 
-    //set-up redis for this route
-    const client = redis.createClient(); 
-    await client.connect();
+    //Setup redis client
+    const redisClient = await _createRedisClient();      
+    await redisClient.connect();
 
     if (!quiz) {
       const err = new ProjectError("Quiz not found!");
@@ -304,7 +238,7 @@ const deleteQuiz: RequestHandler = async (req, res, next) => {
     }
 
     //clean up old cache data
-    await client.del(JSON.stringify(req.userId));
+    await redisClient.del(JSON.stringify(req.userId));
 
     await Quiz.deleteOne({ _id: quizId });
     const resp: ReturnResponse = {
@@ -519,6 +453,5 @@ export {
   updateQuiz,
   getAllQuiz,
   getAllQuizExam,
-  getAllQuizTest,
-  getQuizSortByLevel,  
+  getAllQuizTest  
 };

@@ -101,7 +101,10 @@ clearBlacklistedTokenScheduler;
     redisClient.on("error", (error) => console.error(`Redis Error : ${error}`));
 
     console.log("Connected to Redis server.");
+
+    
 } catch (error) {
     console.error("Error occurred while trying to connect to Redis:", error);
 }
 })();
+
