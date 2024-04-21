@@ -232,7 +232,7 @@ const _createRedisClient = async () => {
   return client;
 }
 
-const getQuiz: RequestHandler = async (req, res, next) => {
+const getQuizWithRedis: RequestHandler = async (req, res, next) => {
  
  let quiz;
  
