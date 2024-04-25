@@ -20,7 +20,10 @@ It is used to store data that needs to be accessed frequently and fast. It is no
 Redis is a popular in-memory key-value database. Unlike traditional databases that run on a computer’s hard disk and store all of their data on disk, Redis runs inside of a system’s working memory (RAM). This allows Redis to be incredibly fast at fetching data, which is why it’s often used as a cache on top of other databases to improve application performance.
 
 ## How Radis cache works
+
 ![Redis](/backend/screenshots/Redis_Diagram_dark.jpg)
+
+***Tool: Draw.io***
 
 Certainly! Let’s break down the working of Redis cache.
 
@@ -228,7 +231,7 @@ const _createRedisClient = async () => {
   client.on('error', (err) => {
       console.error('Redis connection error:', err);
   });
-  // Additional initialization or setup logic can go here
+  
   return client;
 }
 
