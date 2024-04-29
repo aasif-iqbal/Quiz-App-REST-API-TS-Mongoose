@@ -189,7 +189,7 @@ OK
 ```
 
 > [!NOTE] 
-> Note: We Don't Need Redis cache to be installed in our local machine to work with nodejs app. In nodejs app, we simply use npm install redis, to install and use it in our application.
+> Note: We Must Need Redis cache to be installed in our local machine to work with nodejs application.
 
 ## Installing Redis Cache in Our Nodejs App
 
